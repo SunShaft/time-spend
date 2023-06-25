@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 
+from opts import arg_parser
 import time_calculator
 
 
@@ -12,11 +13,13 @@ import time_calculator
 
 def search(*args):
     choices = []
-    for i in time_calculator.pro_data_reader(start_date.get(),end_date.get(),
+    for i in time_calculator.pro_data_reader(parser_args, 
+        start_date.get(),end_date.get(),
         time_detail.get()).split("\n"):
         choices.append(i)
     choicesvar.set(choices)
 
+parser_args = arg_parser()
 
 root = Tk()
 root.title("management")

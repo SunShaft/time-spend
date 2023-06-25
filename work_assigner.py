@@ -47,7 +47,7 @@ def file_iterator(args, line):
             line = line.replace(args.meal_indicator, "*").strip("*")
             meal_collector(line)
         else:
-            raise Exception(f"indicator not found in row {line}")
+            raise Exception(f"indicator not found in row: [{line}]")
     return
 
 def main():
@@ -72,7 +72,7 @@ def main():
     # print(meal_list)
 
     cost_calculator.main(cost_list, date_list)
-    time_calculator.pro_data_writer(time_list, date_list)
+    time_calculator.pro_data_writer(args, time_list, date_list)
 
 
 
