@@ -1,5 +1,6 @@
 # coding=utf-8
 from utils import csv_file_creator, getEveryDay
+from opts import arg_parser
 
 
 class Event():
@@ -13,8 +14,7 @@ class Event():
         self.event_length_hours = minutes_to_hours(event_length)
 
     def __str__(self):
-        return self.start_time + " " + self.end_time + " " + \
-               str(self.event_length) + " " + self.event_type + " " + self.detail
+        return f"{self.start_time:5} {self.end_time:5} {str(self.event_length):3} {self.event_type:5} {self.detail}"
 
     def csv(self):
         return self.start_time + "," + self.end_time + "," + \
@@ -23,61 +23,34 @@ class Event():
 
 
 class Summary():
-    def __init__(self, getup_time, sleep_time, A, B, C, D, E,
-                 A_list, B_list, C_list, D_list, E_list):
+    def __init__(self, getup_time, sleep_time, type_dict):
         self.getup_time = getup_time
         self.sleep_time = sleep_time
-        self.A = A
-        self.B = B
-        self.C = C
-        self.D = D
-        self.E = E
+        self.type_dict = type_dict
 
-        self.A_list = A_list
-        self.B_list = B_list
-        self.C_list = C_list
-        self.D_list = D_list
-        self.E_list = E_list
+        self.whole = 0
+        for i in type_dict:
+            self.whole += self.type_dict[i][0]
 
-        self.A_hours = minutes_to_hours(A)
-        self.B_hours = minutes_to_hours(B)
-        self.C_hours = minutes_to_hours(C)
-        self.D_hours = minutes_to_hours(D)
-        self.E_hours = minutes_to_hours(E)
+        # [type_time_sum, type_event_list, type_time_percentage]
+        for i in self.type_dict:
+            self.type_dict[i].append(percentage_calculator(self.type_dict[i][0], self.whole))
 
     def __str__(self):
-        whole = self.A + self.B + self.C + self.D + self.E
-        A_per = percentage_calculator(self.A, whole)
-        B_per = percentage_calculator(self.B, whole)
-        C_per = percentage_calculator(self.C, whole)
-        D_per = percentage_calculator(self.D, whole)
-        E_per = percentage_calculator(self.E, whole)
+        return_string = "getup_time: " + self.getup_time + "\n" + \
+                        "sleep_time: " + self.sleep_time + "\n"
 
-        return "getup_time: " + self.getup_time + "\n" + \
-               "sleep_time: " + self.sleep_time + "\n" + \
-               "A: " + "{:4}".format(str(self.A)) + " " + str(A_per) + "%\n" + \
-               "B: " + "{:4}".format(str(self.B)) + " " + str(B_per) + "%\n" + \
-               "C: " + "{:4}".format(str(self.C)) + " " + str(C_per) + "%\n" + \
-               "D: " + "{:4}".format(str(self.D)) + " " + str(D_per) + "%\n" + \
-               "E: " + "{:4}".format(str(self.E)) + " " + str(E_per) + "%"
+        for i in self.type_dict:
+            return_string += f"{i:10}: {str(self.type_dict[i][0]):5} {str(self.type_dict[i][2])}%\n"
+
+        return return_string
 
     def detail(self):
         detail = ""
-        for i in self.A_list:
-            detail += "{:6}".format(str(percentage_calculator(i.event_length, self.A))) + "% "
-            detail += i.__str__() + "\n"
-        for i in self.B_list:
-            detail += "{:6}".format(str(percentage_calculator(i.event_length, self.B))) + "% "
-            detail += i.__str__() + "\n"
-        for i in self.C_list:
-            detail += "{:6}".format(str(percentage_calculator(i.event_length, self.C))) + "% "
-            detail += i.__str__() + "\n"
-        for i in self.D_list:
-            detail += "{:6}".format(str(percentage_calculator(i.event_length, self.D))) + "% "
-            detail += i.__str__() + "\n"
-        for i in self.E_list:
-            detail += "{:6}".format(str(percentage_calculator(i.event_length, self.E))) + "% "
-            detail += i.__str__() + "\n"
+        for i in self.type_dict:
+            for j in self.type_dict[i][1]:
+                detail += "{:6}".format(str(percentage_calculator(j.event_length, self.type_dict[i][0]))) + "% "
+                detail += j.__str__() + "\n"
         return detail
 
 
@@ -98,7 +71,7 @@ def minutes_to_hours(time):
 
 
 def percentage_calculator(length, whole):
-    return round(int(length) / int(whole) * 100, 2)
+    return round(int(length) / int(whole) * 100, 1)
 
 
 def time_interval_calculator(previous_time, time):
@@ -120,38 +93,17 @@ def time_interval_calculator(previous_time, time):
 
 def summary(final_list):
     summary_list = []
+    type_dict = {}
     for i in final_list:
-        a = 0
-        b = 0
-        c = 0
-        d = 0
-        e = 0
-        a_list = []
-        b_list = []
-        c_list = []
-        d_list = []
-        e_list = []
         for j in i:
-            if j.event_type == "A":
-                a += int(j.event_length)
-                a_list.append(j)
-            elif j.event_type == "B":
-                b += int(j.event_length)
-                b_list.append(j)
-            elif j.event_type[0] == "C":
-                c += int(j.event_length)
-                c_list.append(j)
-            elif j.event_type == "D":
-                d += int(j.event_length)
-                d_list.append(j)
-            elif j.event_type == "E":
-                e += int(j.event_length)
-                e_list.append(j)
-            else:
-                raise Exception(f"unknown type in row {j}: {j.event_type}")
+            event_type = j.event_type
+            if event_type not in type_dict:
+                type_dict[event_type] = [0,[]]
+            type_dict[event_type][0] += int(j.event_length)
+            type_dict[event_type][1].append(j)
+
         if len(i) != 0:
-            summary_list.append(Summary(i[0].start_time, i[-1].end_time,
-                                        a, b, c, d, e, a_list, b_list, c_list, d_list, e_list))
+            summary_list.append(Summary(i[0].start_time, i[-1].end_time, type_dict))
         else:
             summary_list.append(None)
 
@@ -205,7 +157,7 @@ def pro_data_reader(args, start_date, end_date, detail=False):
     final_list = []
     date_list = getEveryDay(start_date, end_date)
 
-    print(date_list)
+    # print(date_list)
 
     for date in date_list:
         with open(args.pro_data_path + date + args.pro_data_time_name, "r") as f:
@@ -223,7 +175,7 @@ def pro_data_reader(args, start_date, end_date, detail=False):
     # ]
     summary_list = summary(final_list)
 
-    print(summary_list)
+    # print(summary_list)
 
     return_string = ""
 
@@ -255,15 +207,18 @@ def pro_data_reader(args, start_date, end_date, detail=False):
             return_string += date_list[i] + "\n"
             if summary_list[i] is None:
                 continue
-            return_string += summary_list[i].__str__() + "\n"
+            return_string += summary_list[i].__str__()
             if summary_list[i] is not None:
                 return_string += summary_list[i].detail() + "\n"
 
+    print(return_string)
     return return_string
 
 
 def main():
-    pass
+    parser_args = arg_parser()
+    pro_data_reader(parser_args, "2023/5/2", "2023/5/3", True)
+    # pass
 
 
 if __name__ == '__main__':
